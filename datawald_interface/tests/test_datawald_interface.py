@@ -33,82 +33,85 @@ class DataWaldInterfaceTest(unittest.TestCase):
     @unittest.skip("demonstrating skipping")
     def test_graphql_insertorder(self):
         mutation = """
-            mutation InsertOrder($source: String!, $srcId: String!, $data: String!) {
-                insertOrder(source: $source, srcId: $srcId, data: $data) {
-                    order {
+            mutation InsertTransaction($txType: String!, $source: String!, $srcId: String!, $data: String!) {
+                insertTransaction(txType: $txType, source: $source, srcId: $srcId, data: $data) {
+                    transaction {
+                        __typename
                         id
                         source
                         srcId
                         tgtId
-                        type
-                        data{
-                            orderStatus
-                            addresses{
-                                billto{
-                                    address
-                                    city
-                                    company
-                                    country
-                                    email
-                                    firstname
-                                    lastname
-                                    postcode
-                                    region
-                                    telephone
+                        txType
+                        ... on OrderType {
+                            data{
+                                orderStatus
+                                addresses{
+                                    billto{
+                                        address
+                                        city
+                                        company
+                                        country
+                                        email
+                                        firstname
+                                        lastname
+                                        postcode
+                                        region
+                                        telephone
+                                    }
+                                    shipto{
+                                        address
+                                        city
+                                        company
+                                        country
+                                        email
+                                        firstname
+                                        lastname
+                                        postcode
+                                        region
+                                        telephone
+                                    }
                                 }
-                                shipto{
-                                    address
-                                    city
-                                    company
-                                    country
-                                    email
-                                    firstname
-                                    lastname
-                                    postcode
-                                    region
-                                    telephone
-                                }
-                            }
-                            items{
-                                price
-                                qty
-                                sku
-                            }
-                        }
-                        history{
-                            tgtId
-                            updatedAt
-                            orderStatus
-                            addresses{
-                                billto{
-                                    address
-                                    city
-                                    company
-                                    country
-                                    email
-                                    firstname
-                                    lastname
-                                    postcode
-                                    region
-                                    telephone
-                                }
-                                shipto{
-                                    address
-                                    city
-                                    company
-                                    country
-                                    email
-                                    firstname
-                                    lastname
-                                    postcode
-                                    region
-                                    telephone
+                                items{
+                                    price
+                                    qty
+                                    sku
                                 }
                             }
-                            items{
-                                price
-                                qty
-                                sku
+                            history{
+                                tgtId
+                                updatedAt
+                                orderStatus
+                                addresses{
+                                    billto{
+                                        address
+                                        city
+                                        company
+                                        country
+                                        email
+                                        firstname
+                                        lastname
+                                        postcode
+                                        region
+                                        telephone
+                                    }
+                                    shipto{
+                                        address
+                                        city
+                                        company
+                                        country
+                                        email
+                                        firstname
+                                        lastname
+                                        postcode
+                                        region
+                                        telephone
+                                    }
+                                }
+                                items{
+                                    price
+                                    qty
+                                    sku
+                                }
                             }
                         }
                         createdAt
@@ -163,6 +166,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
         }
 
         variables = {
+            "txType": "order",
             "source": "MAGE2SQS",
             "srcId": "2010071552",
             "data": json.dumps(data),
@@ -176,37 +180,40 @@ class DataWaldInterfaceTest(unittest.TestCase):
     # @unittest.skip("demonstrating skipping")
     def test_graphql_insertitemreceipt(self):
         mutation = """
-            mutation InsertItemReceipt($source: String!, $srcId: String!, $data: String!) {
-                insertItemreceipt(source: $source, srcId: $srcId, data: $data) {
-                    itemreceipt {
+            mutation InsertTransaction($txType: String!, $source: String!, $srcId: String!, $data: String!) {
+                insertTransaction(txType: $txType, source: $source, srcId: $srcId, data: $data) {
+                    transaction {
+                        __typename
                         id
                         source
                         srcId
                         tgtId
-                        type
-                        data{
-                            internalId
-                            tgtId
-                            key
-                            orderDate
-                            refNo
-                            status
-                            tranIds
-                            updateDate
-                            shipTo{
-                                address
-                                city
-                                contact
-                                countryCode
-                                name
-                                shipping
-                                state
-                                zip
-                            }
-                            items{
+                        txType
+                        ... on ItemreceiptType {
+                            data{
                                 internalId
-                                itemNo
-                                qty
+                                tgtId
+                                key
+                                orderDate
+                                refNo
+                                status
+                                tranIds
+                                updateDate
+                                shipTo{
+                                    address
+                                    city
+                                    contact
+                                    countryCode
+                                    name
+                                    shipping
+                                    state
+                                    zip
+                                }
+                                items{
+                                    internalId
+                                    itemNo
+                                    qty
+                                }
                             }
                         }
                         createdAt
@@ -247,7 +254,12 @@ class DataWaldInterfaceTest(unittest.TestCase):
             "update_date": "2019-04-03 17:56:24",
         }
 
-        variables = {"source": "S3-NS", "srcId": "SO56374", "data": json.dumps(data)}
+        variables = {
+            "txType": "itemreceipt", 
+            "source": "S3-NS", 
+            "srcId": "SO56374", 
+            "data": json.dumps(data)
+        }
 
         payload = {"mutation": mutation, "variables": variables}
         response = self.interface.interface_graphql(**payload)
@@ -258,81 +270,84 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query getOrder($source: String!, $srcId: String!){
-            order(source: $source, srcId: $srcId) {
+        query getTransaction($source: String!, $srcId: String!, $txType: String!){
+            transaction(source: $source, srcId: $srcId, txType: $txType) {
+                __typename
                 id
                 source
                 srcId
                 tgtId
-                type
-                data{
-                    orderStatus
-                    addresses{
-                        billto{
-                            address
-                            city
-                            company
-                            country
-                            email
-                            firstname
-                            lastname
-                            postcode
-                            region
-                            telephone
+                txType
+                ... on OrderType {
+                    data{
+                        orderStatus
+                        addresses{
+                            billto{
+                                address
+                                city
+                                company
+                                country
+                                email
+                                firstname
+                                lastname
+                                postcode
+                                region
+                                telephone
+                            }
+                            shipto{
+                                address
+                                city
+                                company
+                                country
+                                email
+                                firstname
+                                lastname
+                                postcode
+                                region
+                                telephone
+                            }
                         }
-                        shipto{
-                            address
-                            city
-                            company
-                            country
-                            email
-                            firstname
-                            lastname
-                            postcode
-                            region
-                            telephone
-                        }
-                    }
-                    items{
-                        price
-                        qty
-                        sku
-                    }
-                }
-                history{
-                    tgtId
-                    updatedAt
-                    orderStatus
-                    addresses{
-                        billto{
-                            address
-                            city
-                            company
-                            country
-                            email
-                            firstname
-                            lastname
-                            postcode
-                            region
-                            telephone
-                        }
-                        shipto{
-                            address
-                            city
-                            company
-                            country
-                            email
-                            firstname
-                            lastname
-                            postcode
-                            region
-                            telephone
+                        items{
+                            price
+                            qty
+                            sku
                         }
                     }
-                    items{
-                        price
-                        qty
-                        sku
+                    history{
+                        tgtId
+                        updatedAt
+                        orderStatus
+                        addresses{
+                            billto{
+                                address
+                                city
+                                company
+                                country
+                                email
+                                firstname
+                                lastname
+                                postcode
+                                region
+                                telephone
+                            }
+                            shipto{
+                                address
+                                city
+                                company
+                                country
+                                email
+                                firstname
+                                lastname
+                                postcode
+                                region
+                                telephone
+                            }
+                        }
+                        items{
+                            price
+                            qty
+                            sku
+                        }
                     }
                 }
                 createdAt
@@ -343,25 +358,27 @@ class DataWaldInterfaceTest(unittest.TestCase):
         }
         """
 
-        variables = {"source": "MAGE2SQS", "srcId": "2010071552"}
+        variables = {"source": "MAGE2SQS", "srcId": "2010071552", "txType": "order"}
 
         payload = {"query": query, "variables": variables}
 
         response = self.interface.interface_graphql(**payload)
         logger.info(response)
-        order = Utility.json_loads(response)["data"]["order"]
-        self.assertTrue(order["srcId"] == "2010071552")
-
+    
     @unittest.skip("demonstrating skipping")
     def test_graphql_getitemreceipt(self):
+        logger.info(sys._getframe().f_code.co_name)
+
         query = """
-            query getItemReceipt($source: String!, $srcId: String!){
-                itemreceipt(source: $source, srcId: $srcId) {
-                    id
-                    source
-                    srcId
-                    tgtId
-                    type
+        query getTransaction($source: String!, $srcId: String!, $txType: String!){
+            transaction(source: $source, srcId: $srcId, txType: $txType) {
+                __typename
+                id
+                source
+                srcId
+                tgtId
+                txType
+                ... on ItemreceiptType {
                     data{
                         internalId
                         key
@@ -386,15 +403,16 @@ class DataWaldInterfaceTest(unittest.TestCase):
                             qty
                         }
                     }
-                    createdAt
-                    updatedAt
-                    txNote
-                    txStatus
                 }
+                createdAt
+                updatedAt
+                txNote
+                txStatus
             }
+        }
         """
 
-        variables = {"source": "S3-NS", "srcId": "SO56374"}
+        variables = {"source": "S3-NS", "srcId": "SO56374", "txType": "itemreceipt"}
 
         payload = {"query": query, "variables": variables}
 

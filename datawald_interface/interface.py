@@ -18,6 +18,7 @@ from pynamodb.attributes import (
 )
 from graphene import Field, ObjectType, Schema, Mutation, Boolean, String
 from silvaengine_utility import Utility
+from datawald_model.common_object_types import TransactionType
 
 
 class Interface(object):
@@ -49,18 +50,18 @@ class Interface(object):
 
         return {
             "order": getattr(order_object_types_module, "OrderType"),
-            "itemreceipt": getattr(itemreceipt_object_types_module, "ItemReceiptType"),
+            "itemreceipt": getattr(itemreceipt_object_types_module, "ItemreceiptType"),
         }
 
     def _get_transaction(self, source, src_id, tx_type):
         count = TransactionModel.source_src_id_index.count(
-            source, TransactionModel.src_id == src_id, TransactionModel.type == tx_type
+            source, TransactionModel.src_id == src_id, TransactionModel.tx_type == tx_type
         )
         if count >= 0:
             results = TransactionModel.source_src_id_index.query(
                 source,
                 TransactionModel.src_id == src_id,
-                TransactionModel.type == tx_type,
+                TransactionModel.tx_type == tx_type,
             )
             return results.next()
         else:
@@ -89,14 +90,14 @@ class Interface(object):
         count = TransactionModel.source_src_id_index.count(
             transaction["source"],
             TransactionModel.src_id == transaction["src_id"],
-            TransactionModel.type == tx_type,
+            TransactionModel.tx_type == tx_type,
         )
 
         if count >= 1:
             results = TransactionModel.source_src_id_index.query(
                 transaction["source"],
                 TransactionModel.src_id == transaction["src_id"],
-                TransactionModel.type == tx_type,
+                TransactionModel.tx_type == tx_type,
             )
             _transaction = results.next()
             _id = _transaction.id
@@ -133,7 +134,7 @@ class Interface(object):
             _id,
             **{
                 "src_id": transaction["src_id"],
-                "type": tx_type,
+                "tx_type": tx_type,
                 "data": transaction["data"],
                 "history": history,
                 "created_at": created_at,
@@ -161,33 +162,28 @@ class Interface(object):
         outer = self
 
         class Query(ObjectType):
-            order = Field(
-                self.type_class["order"],
+            transaction = Field(
+                TransactionType,
+                required=True,
                 source=String(required=True),
                 src_id=String(required=True),
-            )
-            itemreceipt = Field(
-                self.type_class["itemreceipt"],
-                source=String(required=True),
-                src_id=String(required=True),
+                tx_type=String(required=True),
             )
 
-            def resolve_order(self, info, **kwargs):
+            def resolve_transaction(self, info, **kwargs):
                 return outer.get_transaction(
-                    kwargs.get("source"), kwargs.get("src_id"), tx_type="order"
-                )
-
-            def resolve_itemreceipt(self, info, **kwargs):
-                return outer.get_transaction(
-                    kwargs.get("source"), kwargs.get("src_id"), tx_type="itemreceipt"
+                    kwargs.get("source"),
+                    kwargs.get("src_id"),
+                    tx_type=kwargs.get("tx_type"),
                 )
 
         ## Mutation ##
 
-        class InsertOrder(Mutation):
-            order = Field(self.type_class["order"])
+        class InsertTransaction(Mutation):
+            transaction = Field(TransactionType)
 
             class Arguments:
+                tx_type = String(required=True)
                 source = String(required=True)
                 src_id = String(required=True)
                 data = String(required=True)
@@ -201,48 +197,17 @@ class Interface(object):
                             "src_id": kwargs.get("src_id"),
                             "data": json.loads(kwargs.get("data")),
                         },
-                        tx_type="order",
+                        tx_type=kwargs.get("tx_type"),
                     )
-                    order = self.get_transaction(
-                        kwargs.get("source"), kwargs.get("src_id"), "order"
-                    )
-                except Exception:
-                    log = traceback.format_exc()
-                    self.logger.exception(log)
-                    raise
-
-                return InsertOrder(order=order)
-
-        class InsertItemReceipt(Mutation):
-            itemreceipt = Field(self.type_class["itemreceipt"])
-
-            class Arguments:
-                source = String(required=True)
-                src_id = String(required=True)
-                data = String(required=True)
-
-            @staticmethod
-            def mutate(root, info, **kwargs):
-                try:
-                    self.insert_transaction(
-                        {
-                            "source": kwargs.get("source"),
-                            "src_id": kwargs.get("src_id"),
-                            "data": json.loads(kwargs.get("data")),
-                        },
-                        tx_type="itemreceipt",
-                    )
-                    itemreceipt = self.get_transaction(
-                        kwargs.get("source"),
-                        kwargs.get("src_id"),
-                        "itemreceipt",
+                    transaction = self.get_transaction(
+                        kwargs.get("source"), kwargs.get("src_id"), kwargs.get("tx_type")
                     )
                 except Exception:
                     log = traceback.format_exc()
                     self.logger.exception(log)
                     raise
 
-                return InsertItemReceipt(itemreceipt=itemreceipt)
+                return InsertTransaction(transaction=transaction)
 
         class UpdateTransactionStatus(Mutation):
             status = Boolean()
@@ -275,8 +240,7 @@ class Interface(object):
                 return UpdateTransactionStatus(status=status)
 
         class Mutations(ObjectType):
-            insert_order = InsertOrder.Field()
-            insert_itemreceipt = InsertItemReceipt.Field()
+            insert_transaction = InsertTransaction.Field()
             update_transaction_status = UpdateTransactionStatus.Field()
 
         ## Mutation ##
