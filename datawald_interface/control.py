@@ -8,17 +8,32 @@ import os, uuid, boto3, traceback
 from datetime import datetime
 from time import sleep
 from silvaengine_utility import Utility
-from datawald_model.models import SyncControlModel, SyncTaskEntityMap, TransactionModel
+from datawald_model.models import BaseModel, SyncTaskModel, EntityMap, TransactionModel
+from datawald_model.control_object_types import (
+    TaskType,
+    CutDateType,
+    SyncTaskType,
+    EntityInputType,
+)
+from graphene import Field, ObjectType, Schema, Mutation, String, DateTime, Int, List
 
 
 class Control(object):
 
-    sqs = boto3.client("sqs")
-    aws_lambda = boto3.client("lambda")
+    # sqs = boto3.client("sqs")
+    # aws_lambda = boto3.client("lambda")
 
     def __init__(self, logger, **setting):
         self.logger = logger
         self.setting = setting
+        if (
+            setting.get("region_name")
+            and setting.get("aws_access_key_id")
+            and setting.get("aws_secret_access_key")
+        ):
+            BaseModel.Meta.region = setting.get("region_name")
+            BaseModel.Meta.aws_access_key_id = setting.get("aws_access_key_id")
+            BaseModel.Meta.aws_secret_access_key = setting.get("aws_secret_access_key")
 
     def entity_model(self, table):
         _entity_model = {"transaction": TransactionModel}
@@ -42,15 +57,15 @@ class Control(object):
 
     # Add GraphQL Query.
     def get_cut_date(self, source, task):
-        cut_date = os.environ["DEFAULTCUTDATE"]
+        # cut_date = os.environ["DEFAULTCUTDATE"]
         offset = 0
         sync_statuses = ["Completed", "Fail", "Incompleted", "Processing"]
         sync_tasks = [
             sync_task
-            for sync_task in SyncControlModel.task_source_index.query(
+            for sync_task in SyncTaskModel.task_source_index.query(
                 task,
-                SyncControlModel.source == source,
-                SyncControlModel.sync_status.is_in(*sync_statuses),
+                SyncTaskModel.source == source,
+                SyncTaskModel.sync_status.is_in(*sync_statuses),
             )
         ]
 
@@ -63,107 +78,222 @@ class Control(object):
             cut_date = last_sync_task.cut_date
             offset = int(last_sync_task.offset)
 
-            # Flsuh Sync Control Table by frontend and task.
-            self.flush_sync_control(task, source, id)
+            # Flsuh Sync Task Table by frontend and task.
+            self.flush_sync_task(task, source, id)
         return cut_date, offset
 
-    def flush_sync_control(self, task, source, id):
-        for sync_task in SyncControlModel.task_source_index.query(
-            task, SyncControlModel.source == source
+    def flush_sync_task(self, task, source, id):
+        for sync_task in SyncTaskModel.task_source_index.query(
+            task, SyncTaskModel.source == source, SyncTaskModel.id != id
         ):
-            sync_task.delete(SyncControlModel.id != id)
+            sync_task.delete(SyncTaskModel.id != id)
 
     # Add GraphQL Mutation.
-    def insert_sync_control(self, source, target, task, table, sync_task):
+    def insert_sync_task(self, **sync_task):
         id = str(uuid.uuid1().int >> 64)
-        sync_control_model = SyncControlModel(
-            task,
+        sync_task_model = SyncTaskModel(
+            sync_task["task"],
             id,
             **{
-                "source": source,
-                "target": target,
-                "table": table,
-                "sync_status": "Processing",
-                "start_date": datetime.utcnow(),
+                "source": sync_task["source"],
+                "target": sync_task["target"],
+                "table": sync_task["table"],
                 "cut_date": sync_task["cut_date"],
+                "start_date": datetime.utcnow(),
+                "end_date": datetime.utcnow(),
                 "offset": sync_task.get("offset", 0),
-                "sync_note": f"Process task ({task}) for source ({source}).",
-                "entities": [
-                    SyncTaskEntityMap(**entity) for entity in sync_task["entities"]
-                ],
+                "sync_note": f"Process task ({sync_task['task']}) for source ({sync_task['source']}).",
+                "sync_status": "Processing",
+                "entities": [EntityMap(**entity) for entity in sync_task["entities"]],
             },
         )
-        sync_control_model.save()
+        sync_task_model.save()
 
-        if len(sync_control_model.entities) > 0:
-            queue_name = f"{source}_{target}_{table}_{id}"[:75] + ".fifo"
-            Control.dispatch_sync_task(
-                self.logger, task, target, queue_name, sync_control_model.entities
-            )
+        # if len(sync_task_model.entities) > 0:
+        #     queue_name = (
+        #         f"{sync_task['source']}_{sync_task['target']}_{sync_task['table']}_{id}"[
+        #             :75
+        #         ]
+        #         + ".fifo"
+        #     )
+        #     Control.dispatch_sync_task(
+        #         self.logger,
+        #         sync_task["task"],
+        #         sync_task["target"],
+        #         queue_name,
+        #         sync_task_model.entities,
+        #     )
 
-        return sync_control_model
+        return SyncTaskModel.get(sync_task["task"], id)
 
     # Add GraphQL Mutation.
-    def update_sync_control(self, task, id, entities):
+    def update_sync_task(self, task, id, entities):
         sync_status = "Completed"
         if len(list(filter(lambda x: x["task_status"] == "F", entities))) > 0:
             sync_status = "Fail"
         if len(list(filter(lambda x: x["task_status"] == "?", entities))) > 0:
             sync_status = "Incompleted"
 
-        sync_task = SyncControlModel.get(task, id)
-        return sync_task.update(
+        sync_task_model = SyncTaskModel.get(task, id)
+        sync_task_model.update(
             actions=[
-                SyncControlModel.sync_status.set(sync_status),
-                SyncControlModel.end_date.set(datetime.utcnow()),
-                SyncControlModel.entities.set(
-                    [SyncTaskEntityMap(**entity) for entity in entities]
+                SyncTaskModel.sync_status.set(sync_status),
+                SyncTaskModel.end_date.set(datetime.utcnow()),
+                SyncTaskModel.entities.set(
+                    [EntityMap(**entity) for entity in entities]
                 ),
             ]
         )
 
+        return SyncTaskModel.get(task, id)
+
     # Add GraphQL Query.
     def get_sync_task(self, task, id):
-        return SyncControlModel.get(task, id)
+        return SyncTaskModel.get(task, id)
 
     # Add GraphQL Mutation.
     def del_sync_task(self, task, id):
-        sync_task = SyncControlModel.get(task, id)
+        sync_task = SyncTaskModel.get(task, id)
         sync_task.delete()
 
-    @classmethod
-    def dispatch_sync_task(cls, logger, task, target, queue_name, entities):
-        max_task_agents = int(os.environ.get("MAXTASKAGENTS", "1"))
-        function_name = os.environ["AGENTTASKARN"]
+    # @classmethod
+    # def dispatch_sync_task(cls, logger, task, target, queue_name, entities):
+    #     max_task_agents = int(os.environ.get("MAXTASKAGENTS", "1"))
+    #     function_name = os.environ["AGENTTASKARN"]
 
-        try:
-            task_queue = cls.sqs.create_queue(
-                QueueName=queue_name,
-                Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+    #     try:
+    #         task_queue = cls.sqs.create_queue(
+    #             QueueName=queue_name,
+    #             Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+    #         )
+
+    #         for entity in entities:
+    #             if entity.tx_status != "N":
+    #                 continue
+
+    #             task_queue.send_message(
+    #                 MessageBody=Utility.json_dumps(
+    #                     {"source": entity.source, "id": entity.id}
+    #                 ),
+    #                 MessageGroupId=id,
+    #             )
+
+    #         while max_task_agents:
+    #             cls.aws_lambda.invoke(
+    #                 FunctionName=function_name,
+    #                 InvocationType="Event",
+    #                 Payload=Utility.json_dumps(
+    #                     {"endpoint_id": target, "queue_name": queue_name, "funct": task}
+    #                 ),
+    #             )
+    #             max_task_agents -= 1
+    #             sleep(1)
+    #     except Exception:
+    #         log = traceback.format_exc()
+    #         logger.exception(log)
+    #         raise
+
+    def control_graphql(self, **params):
+        outer = self
+
+        class Query(ObjectType):
+            task = Field(
+                TaskType,
+                table=String(required=True),
+                source=String(required=True),
+                id=String(required=True),
+            )
+            cut_date = Field(
+                CutDateType, source=String(required=True), task=String(required=True)
             )
 
-            for entity in entities:
-                if entity.tx_status != "N":
-                    continue
-
-                task_queue.send_message(
-                    MessageBody=Utility.json_dumps(
-                        {"source": entity.source, "id": entity.id}
-                    ),
-                    MessageGroupId=id,
+            def resolve_task(self, info, **kwargs):
+                task = outer.get_task(
+                    kwargs.get("table"), kwargs.get("source"), kwargs.get("id")
                 )
+                return TaskType(**task)
 
-            while max_task_agents:
-                cls.aws_lambda.invoke(
-                    FunctionName=function_name,
-                    InvocationType="Event",
-                    Payload=Utility.json_dumps(
-                        {"endpoint_id": target, "queue_name": queue_name, "funct": task}
-                    ),
+            def resolve_cut_date(self, info, **kwargs):
+                cut_date, offset = outer.get_cut_date(
+                    kwargs.get("source"), kwargs.get("task")
                 )
-                max_task_agents -= 1
-                sleep(1)
-        except Exception:
-            log = traceback.format_exc()
-            logger.exception(log)
-            raise
+                return CutDateType(cut_date=cut_date, offset=offset)
+
+        ## Mutation ##
+
+        class InsertSyncTask(Mutation):
+            sync_task = Field(SyncTaskType)
+
+            class Arguments:
+                task = String(required=True)
+                source = String(required=True)
+                target = String(required=True)
+                table = String(required=True)
+                cut_date = DateTime(required=True)
+                offset = Int()
+                entities = List(EntityInputType)
+
+            @staticmethod
+            def mutate(root, info, **kwargs):
+                try:
+                    sync_task_model = outer.insert_sync_task(**kwargs)
+                    sync_task = SyncTaskType(
+                        **sync_task_model.__dict__["attribute_values"]
+                    )
+
+                except Exception:
+                    log = traceback.format_exc()
+                    self.logger.exception(log)
+                    raise
+
+                return InsertSyncTask(sync_task=sync_task)
+
+        class UpdateSyncTask(Mutation):
+            sync_task = Field(SyncTaskType)
+
+            class Arguments:
+                task = String(required=True)
+                id = String(required=True)
+                entities = List(EntityInputType)
+
+            @staticmethod
+            def mutate(root, info, **kwargs):
+                try:
+                    sync_task_model = outer.update_sync_task(**kwargs)
+                    sync_task = SyncTaskType(
+                        **sync_task_model.__dict__["attribute_values"]
+                    )
+
+                except Exception:
+                    log = traceback.format_exc()
+                    self.logger.exception(log)
+                    raise
+
+                return InsertSyncTask(sync_task=sync_task)
+
+        class Mutations(ObjectType):
+            insert_sync_task = InsertSyncTask.Field()
+            update_sync_task = UpdateSyncTask.Field()
+
+        ## Mutation ##
+
+        schema = Schema(
+            query=Query,
+            mutation=Mutations,
+            types=[TaskType, CutDateType],
+        )
+
+        variables = params.get("variables", {})
+        query = params.get("query")
+        if query is not None:
+            result = schema.execute(query, variable_values=variables)
+        mutation = params.get("mutation")
+        if mutation is not None:
+            result = schema.execute(mutation, variable_values=variables)
+
+        response = {
+            "data": dict(result.data) if result.data != None else None,
+        }
+        if result.errors != None:
+            response["errors"] = [str(error) for error in result.errors]
+        return Utility.json_dumps(response)
