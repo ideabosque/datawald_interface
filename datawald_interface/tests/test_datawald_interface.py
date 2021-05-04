@@ -1,3 +1,9 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+
+__author__ = "bibow"
+
 import logging, sys, json, unittest, uuid, os
 from datetime import datetime, timedelta, date
 from decimal import Decimal
@@ -255,10 +261,10 @@ class DataWaldInterfaceTest(unittest.TestCase):
         }
 
         variables = {
-            "txType": "itemreceipt", 
-            "source": "S3-NS", 
-            "srcId": "SO56374", 
-            "data": json.dumps(data)
+            "txType": "itemreceipt",
+            "source": "S3-NS",
+            "srcId": "SO56374",
+            "data": json.dumps(data),
         }
 
         payload = {"mutation": mutation, "variables": variables}
@@ -364,7 +370,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
 
         response = self.interface.interface_graphql(**payload)
         logger.info(response)
-    
+
     @unittest.skip("demonstrating skipping")
     def test_graphql_getitemreceipt(self):
         logger.info(sys._getframe().f_code.co_name)

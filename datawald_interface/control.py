@@ -15,7 +15,7 @@ from datawald_model.control_object_types import (
     SyncTaskType,
     EntityInputType,
 )
-from graphene import Field, ObjectType, Schema, Mutation, String, DateTime, Int, List
+from graphene import Field, ObjectType, Schema, Mutation, String, DateTime, Int, Boolean, List
 
 
 class Control(object):
@@ -147,10 +147,6 @@ class Control(object):
 
         return SyncTaskModel.get(task, id)
 
-    # Add GraphQL Query.
-    def get_sync_task(self, task, id):
-        return SyncTaskModel.get(task, id)
-
     # Add GraphQL Mutation.
     def del_sync_task(self, task, id):
         sync_task = SyncTaskModel.get(task, id)
@@ -206,6 +202,11 @@ class Control(object):
             cut_date = Field(
                 CutDateType, source=String(required=True), task=String(required=True)
             )
+            sync_task = Field(
+                SyncTaskType,
+                task=String(required=True),
+                id=String(required=True),
+            )
 
             def resolve_task(self, info, **kwargs):
                 task = outer.get_task(
@@ -218,6 +219,12 @@ class Control(object):
                     kwargs.get("source"), kwargs.get("task")
                 )
                 return CutDateType(cut_date=cut_date, offset=offset)
+
+            def resolve_sync_task(self, info, **kwargs):
+                sync_task_model = SyncTaskModel.get(
+                    kwargs.get("task"), kwargs.get("id")
+                )
+                return SyncTaskType(**sync_task_model.__dict__["attribute_values"])
 
         ## Mutation ##
 
@@ -269,18 +276,40 @@ class Control(object):
                     self.logger.exception(log)
                     raise
 
-                return InsertSyncTask(sync_task=sync_task)
+                return UpdateSyncTask(sync_task=sync_task)
+
+        class DeleteSyncTask(Mutation):
+            ok = Boolean()
+
+            class Arguments:
+                task = String(required=True)
+                id = String(required=True)
+
+            @staticmethod
+            def mutate(root, info, **kwargs):
+                try:
+                    sync_task_model = outer.update_sync_task(**kwargs)
+                    sync_task_model.delete()
+                    ok = True
+
+                except Exception:
+                    log = traceback.format_exc()
+                    self.logger.exception(log)
+                    raise
+
+                return DeleteSyncTask(ok=ok)
 
         class Mutations(ObjectType):
             insert_sync_task = InsertSyncTask.Field()
             update_sync_task = UpdateSyncTask.Field()
+            delete_sync_task = DeleteSyncTask.Field()
 
         ## Mutation ##
 
         schema = Schema(
             query=Query,
             mutation=Mutations,
-            types=[TaskType, CutDateType],
+            types=[TaskType, CutDateType, SyncTaskType],
         )
 
         variables = params.get("variables", {})

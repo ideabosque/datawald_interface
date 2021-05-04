@@ -1,3 +1,9 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+
+__author__ = "bibow"
+
 import logging, sys, json, unittest, uuid, os
 from datetime import datetime, timedelta, date
 from decimal import Decimal
@@ -88,9 +94,9 @@ class DataWaldControlTest(unittest.TestCase):
                     "id": "xxxxxxx",
                     "taskNote": "xxxxxxx",
                     "taskStatus": "S",
-                    "updatedAt": "2021-04-19T12:24:04.235901+0000"
+                    "updatedAt": "2021-04-19T12:24:04.235901+0000",
                 }
-            ]
+            ],
         }
 
         payload = {"mutation": mutation, "variables": variables}
@@ -98,7 +104,7 @@ class DataWaldControlTest(unittest.TestCase):
         response = self.control.control_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_updatesynctask(self):
         mutation = """
             mutation UpdateSyncTask(
@@ -144,9 +150,9 @@ class DataWaldControlTest(unittest.TestCase):
                     "id": "xxxxxxx",
                     "taskNote": "xxxxxxx",
                     "taskStatus": "S",
-                    "updatedAt": "2021-04-19T12:24:04.235901+0000"
+                    "updatedAt": "2021-04-19T12:24:04.235901+0000",
                 }
-            ]
+            ],
         }
 
         payload = {"mutation": mutation, "variables": variables}
@@ -171,14 +177,18 @@ class DataWaldControlTest(unittest.TestCase):
         }
         """
 
-        variables = {"table": "transaction", "source": "MAGE2SQS", "id": "594efb4a-91d3-11eb-b0eb-d8f2cab5f526"}
+        variables = {
+            "table": "transaction",
+            "source": "MAGE2SQS",
+            "id": "594efb4a-91d3-11eb-b0eb-d8f2cab5f526",
+        }
 
         payload = {"query": query, "variables": variables}
 
         response = self.control.control_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_getcutdate(self):
         logger.info(sys._getframe().f_code.co_name)
 
@@ -192,6 +202,42 @@ class DataWaldControlTest(unittest.TestCase):
         """
 
         variables = {"source": "MAGE2SQS", "task": "syncOrder"}
+
+        payload = {"query": query, "variables": variables}
+
+        response = self.control.control_graphql(**payload)
+        logger.info(response)
+
+    @unittest.skip("demonstrating skipping")
+    def test_graphql_getsynctask(self):
+        logger.info(sys._getframe().f_code.co_name)
+
+        query = """
+            query getSyncTask($task: String!, $id: String!) {
+                syncTask(task: $task, id: $id) {
+                    task
+                    id
+                    source
+                    target
+                    table
+                    cutDate
+                    startDate
+                    endDate
+                    offset
+                    syncNote
+                    syncStatus
+                    entities {
+                        source
+                        id
+                        taskNote
+                        taskStatus
+                        updatedAt
+                    }
+                }
+            }
+        """
+
+        variables = {"task": "syncOrder", "id": "12118427224148808171"}
 
         payload = {"query": query, "variables": variables}
 
