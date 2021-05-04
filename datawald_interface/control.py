@@ -147,11 +147,6 @@ class Control(object):
 
         return SyncTaskModel.get(task, id)
 
-    # Add GraphQL Mutation.
-    def del_sync_task(self, task, id):
-        sync_task = SyncTaskModel.get(task, id)
-        sync_task.delete()
-
     # @classmethod
     # def dispatch_sync_task(cls, logger, task, target, queue_name, entities):
     #     max_task_agents = int(os.environ.get("MAXTASKAGENTS", "1"))

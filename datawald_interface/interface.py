@@ -55,7 +55,9 @@ class Interface(object):
 
     def _get_transaction(self, source, src_id, tx_type):
         count = TransactionModel.source_src_id_index.count(
-            source, TransactionModel.src_id == src_id, TransactionModel.tx_type == tx_type
+            source,
+            TransactionModel.src_id == src_id,
+            TransactionModel.tx_type == tx_type,
         )
         if count >= 0:
             results = TransactionModel.source_src_id_index.query(
@@ -119,11 +121,7 @@ class Interface(object):
                     actions=[
                         TransactionModel.updated_at.set(datetime.utcnow()),
                         TransactionModel.tx_note.set(
-                            "No update {tx_type}: {source}/{src_id}".format(
-                                tx_type=tx_type,
-                                source=transaction["source"],
-                                src_id=transaction["src_id"],
-                            )
+                            f"No update {tx_type}: {transaction['source']}/{transaction['src_id']}"
                         ),
                         TransactionModel.tx_status.set(tx_status),
                     ]
@@ -139,9 +137,9 @@ class Interface(object):
                 "history": history,
                 "created_at": created_at,
                 "updated_at": datetime.utcnow(),
-                "tx_note": "{source} -> DataWald".format(source=transaction["source"]),
+                "tx_note": f"{transaction['source']} -> DataWald",
                 "tx_status": tx_status,
-            }
+            },
         )
 
         return transaction_model.save()
@@ -200,7 +198,9 @@ class Interface(object):
                         tx_type=kwargs.get("tx_type"),
                     )
                     transaction = self.get_transaction(
-                        kwargs.get("source"), kwargs.get("src_id"), kwargs.get("tx_type")
+                        kwargs.get("source"),
+                        kwargs.get("src_id"),
+                        kwargs.get("tx_type"),
                     )
                 except Exception:
                     log = traceback.format_exc()
