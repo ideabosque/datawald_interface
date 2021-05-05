@@ -39,7 +39,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
     @unittest.skip("demonstrating skipping")
     def test_graphql_insertorder(self):
         mutation = """
-            mutation InsertTransaction($txType: String!, $source: String!, $srcId: String!, $data: String!) {
+            mutation($txType: String!, $source: String!, $srcId: String!, $data: String!) {
                 insertTransaction(txType: $txType, source: $source, srcId: $srcId, data: $data) {
                     transaction {
                         __typename
@@ -186,7 +186,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
     @unittest.skip("demonstrating skipping")
     def test_graphql_insertitemreceipt(self):
         mutation = """
-            mutation InsertTransaction($txType: String!, $source: String!, $srcId: String!, $data: String!) {
+            mutation($txType: String!, $source: String!, $srcId: String!, $data: String!) {
                 insertTransaction(txType: $txType, source: $source, srcId: $srcId, data: $data) {
                     transaction {
                         __typename
@@ -276,7 +276,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query getTransaction($source: String!, $srcId: String!, $txType: String!){
+        query($source: String!, $srcId: String!, $txType: String!) {
             transaction(source: $source, srcId: $srcId, txType: $txType) {
                 __typename
                 id
@@ -376,7 +376,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query getTransaction($source: String!, $srcId: String!, $txType: String!){
+        query($source: String!, $srcId: String!, $txType: String!) {
             transaction(source: $source, srcId: $srcId, txType: $txType) {
                 __typename
                 id
@@ -428,7 +428,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
     # @unittest.skip("demonstrating skipping")
     def test_graphql_updatetransactionstatus(self):
         mutation = """
-            mutation UpdateTransactionStatus(
+            mutation(
                 $source: String!, 
                 $id: String!, 
                 $tgtId: String!, 
@@ -463,7 +463,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
     @unittest.skip("demonstrating skipping")
     def test_graphql_insertsynctask(self):
         mutation = """
-            mutation InsertSyncTask(
+            mutation(
                 $task: String!,
                 $source: String!,
                 $target: String!,
@@ -531,7 +531,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
     @unittest.skip("demonstrating skipping")
     def test_graphql_updatesynctask(self):
         mutation = """
-            mutation UpdateSyncTask(
+            mutation(
                 $task: String!,
                 $id: String!,
                 $entities: [EntityInputType]!
@@ -589,7 +589,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query getTask($table: String!, $source: String!, $id: String!){
+        query($table: String!, $source: String!, $id: String!) {
             task(table: $table, source: $source, id: $id) {
                 source
                 id
@@ -617,7 +617,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query getCutDate($source: String!, $task: String!){
+        query($source: String!, $task: String!) {
             cutDate(source: $source, task: $task) {
                 cutDate
                 offset
@@ -637,7 +637,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-            query getSyncTask($task: String!, $id: String!) {
+            query($task: String!, $id: String!) {
                 syncTask(task: $task, id: $id) {
                     task
                     id
