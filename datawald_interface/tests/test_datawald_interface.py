@@ -183,7 +183,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
         response = self.interface.interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_insertitemreceipt(self):
         mutation = """
             mutation InsertTransaction($txType: String!, $source: String!, $srcId: String!, $data: String!) {
@@ -425,11 +425,23 @@ class DataWaldInterfaceTest(unittest.TestCase):
         response = self.interface.interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_updatetransactionstatus(self):
         mutation = """
-            mutation UpdateTransactionStatus($source: String!, $id: String!, $tgtId: String!, $txNote: String!, $txStatus: String!) {
-                updateTransactionStatus(transactionStatusInput: {source: $source, id: $id, tgtId: $tgtId, txNote: $txNote, txStatus: $txStatus}) {
+            mutation UpdateTransactionStatus(
+                $source: String!, 
+                $id: String!, 
+                $tgtId: String!, 
+                $txNote: String!, 
+                $txStatus: String!
+            ) {
+                updateTransactionStatus(
+                    source: $source, 
+                    id: $id, 
+                    tgtId: $tgtId, 
+                    txNote: $txNote, 
+                    txStatus: $txStatus
+                ) {
                     status
                 }
             }
@@ -437,7 +449,7 @@ class DataWaldInterfaceTest(unittest.TestCase):
 
         variables = {
             "source": "MAGE2SQS",
-            "id": "594efb4a-91d3-11eb-b0eb-d8f2cab5f526",
+            "id": "d5b5038a-ad24-11eb-8acd-0242ac120002",
             "tgtId": "4662959",
             "txNote": "DataWald -> S3-NS",
             "txStatus": "S",
@@ -448,6 +460,214 @@ class DataWaldInterfaceTest(unittest.TestCase):
         response = self.interface.interface_graphql(**payload)
         logger.info(response)
 
+    @unittest.skip("demonstrating skipping")
+    def test_graphql_insertsynctask(self):
+        mutation = """
+            mutation InsertSyncTask(
+                $task: String!,
+                $source: String!,
+                $target: String!,
+                $table: String!,
+                $cutDate: DateTime!,
+                $offset: Int!,
+                $entities: [EntityInputType]!
+            ) {
+                insertSyncTask(
+                    task: $task,
+                    source: $source,
+                    target: $target,
+                    table: $table,
+                    cutDate: $cutDate,
+                    offset: $offset,
+                    entities: $entities
+                ) {
+                    syncTask {
+                        task
+                        id
+                        source
+                        target
+                        table
+                        cutDate
+                        startDate
+                        endDate
+                        offset
+                        syncNote
+                        syncStatus
+                        entities {
+                            source
+                            id
+                            taskNote
+                            taskStatus
+                            updatedAt
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "task": "syncOrder",
+            "source": "MAGE2SQS",
+            "target": "NS-MAGE2",
+            "table": "transaction",
+            "cutDate": "2021-04-19T12:24:04.235901+0000",
+            "offset": 0,
+            "entities": [
+                {
+                    "source": "",
+                    "id": "xxxxxxx",
+                    "taskNote": "xxxxxxx",
+                    "taskStatus": "S",
+                    "updatedAt": "2021-04-19T12:24:04.235901+0000",
+                }
+            ],
+        }
+
+        payload = {"mutation": mutation, "variables": variables}
+
+        response = self.interface.interface_graphql(**payload)
+        logger.info(response)
+
+    @unittest.skip("demonstrating skipping")
+    def test_graphql_updatesynctask(self):
+        mutation = """
+            mutation UpdateSyncTask(
+                $task: String!,
+                $id: String!,
+                $entities: [EntityInputType]!
+            ) {
+                updateSyncTask(
+                    task: $task,
+                    id: $id,
+                    entities: $entities
+                ) {
+                    syncTask {
+                        task
+                        id
+                        source
+                        target
+                        table
+                        cutDate
+                        startDate
+                        endDate
+                        offset
+                        syncNote
+                        syncStatus
+                        entities {
+                            source
+                            id
+                            taskNote
+                            taskStatus
+                            updatedAt
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "task": "syncOrder",
+            "id": "12118427224148808171",
+            "entities": [
+                {
+                    "source": "MAGE2SQS",
+                    "id": "xxxxxxx",
+                    "taskNote": "xxxxxxx",
+                    "taskStatus": "S",
+                    "updatedAt": "2021-04-19T12:24:04.235901+0000",
+                }
+            ],
+        }
+
+        payload = {"mutation": mutation, "variables": variables}
+
+        response = self.interface.interface_graphql(**payload)
+        logger.info(response)
+
+    @unittest.skip("demonstrating skipping")
+    def test_graphql_gettask(self):
+        logger.info(sys._getframe().f_code.co_name)
+
+        query = """
+        query getTask($table: String!, $source: String!, $id: String!){
+            task(table: $table, source: $source, id: $id) {
+                source
+                id
+                taskStatus
+                taskNote
+                updatedAt
+                ready
+            }
+        }
+        """
+
+        variables = {
+            "table": "transaction",
+            "source": "MAGE2SQS",
+            "id": "594efb4a-91d3-11eb-b0eb-d8f2cab5f526",
+        }
+
+        payload = {"query": query, "variables": variables}
+
+        response = self.interface.interface_graphql(**payload)
+        logger.info(response)
+
+    @unittest.skip("demonstrating skipping")
+    def test_graphql_getcutdate(self):
+        logger.info(sys._getframe().f_code.co_name)
+
+        query = """
+        query getCutDate($source: String!, $task: String!){
+            cutDate(source: $source, task: $task) {
+                cutDate
+                offset
+            }
+        }
+        """
+
+        variables = {"source": "MAGE2SQS", "task": "syncOrder"}
+
+        payload = {"query": query, "variables": variables}
+
+        response = self.interface.interface_graphql(**payload)
+        logger.info(response)
+
+    @unittest.skip("demonstrating skipping")
+    def test_graphql_getsynctask(self):
+        logger.info(sys._getframe().f_code.co_name)
+
+        query = """
+            query getSyncTask($task: String!, $id: String!) {
+                syncTask(task: $task, id: $id) {
+                    task
+                    id
+                    source
+                    target
+                    table
+                    cutDate
+                    startDate
+                    endDate
+                    offset
+                    syncNote
+                    syncStatus
+                    entities {
+                        source
+                        id
+                        taskNote
+                        taskStatus
+                        updatedAt
+                    }
+                }
+            }
+        """
+
+        variables = {"task": "syncOrder", "id": "12118427224148808171"}
+
+        payload = {"query": query, "variables": variables}
+
+        response = self.interface.interface_graphql(**payload)
+        logger.info(response)
+    
 
 if __name__ == "__main__":
     unittest.main()
