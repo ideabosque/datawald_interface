@@ -4,7 +4,7 @@ from __future__ import print_function
 
 __author__ = "bibow"
 
-import json, traceback
+import json, traceback, logging
 from graphene import (
     Field,
     ObjectType,
@@ -16,6 +16,7 @@ from graphene import (
     Int,
     List,
 )
+from graphdoc import to_doc
 from silvaengine_utility import Utility
 from datawald_model.common_object_types import TransactionType
 from datawald_model.control_object_types import (
@@ -235,3 +236,23 @@ class Mutations(ObjectType):
     insert_sync_task = InsertSyncTask.Field()
     update_sync_task = UpdateSyncTask.Field()
     delete_sync_task = DeleteSyncTask.Field()
+
+
+def graphql_schema_doc():
+    logger = logging.getLogger()
+    schema_init(
+        **{
+            "type_class_module": {
+                "order_object_types_module": "datawald_model.order_object_types",
+                "itemreceipt_object_types_module": "datawald_model.itemreceipt_object_types",
+            },
+            "logger": logger,
+        }
+    )
+
+    schema = Schema(
+        query=Query,
+        mutation=Mutations,
+        types=type_class(),
+    )
+    return to_doc(schema)
