@@ -16,7 +16,6 @@ from graphene import (
     Int,
     List,
 )
-from graphdoc import to_doc
 from silvaengine_utility import Utility
 from datawald_model.common_object_types import TransactionType
 from datawald_model.control_object_types import (
@@ -239,6 +238,8 @@ class Mutations(ObjectType):
 
 
 def graphql_schema_doc():
+    from graphdoc import to_doc
+    
     logger = logging.getLogger()
     schema_init(
         **{
