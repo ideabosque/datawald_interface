@@ -276,92 +276,92 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query($source: String!, $srcId: String!, $txType: String!) {
-            transaction(source: $source, srcId: $srcId, txType: $txType) {
-                __typename
-                id
-                source
-                srcId
-                tgtId
-                txType
-                ... on OrderType {
-                    data{
-                        orderStatus
-                        addresses{
-                            billto{
-                                address
-                                city
-                                company
-                                country
-                                email
-                                firstname
-                                lastname
-                                postcode
-                                region
-                                telephone
+            query($source: String!, $srcId: String!, $txType: String!) {
+                transaction(source: $source, srcId: $srcId, txType: $txType) {
+                    __typename
+                    id
+                    source
+                    srcId
+                    tgtId
+                    txType
+                    ... on OrderType {
+                        data{
+                            orderStatus
+                            addresses{
+                                billto{
+                                    address
+                                    city
+                                    company
+                                    country
+                                    email
+                                    firstname
+                                    lastname
+                                    postcode
+                                    region
+                                    telephone
+                                }
+                                shipto{
+                                    address
+                                    city
+                                    company
+                                    country
+                                    email
+                                    firstname
+                                    lastname
+                                    postcode
+                                    region
+                                    telephone
+                                }
                             }
-                            shipto{
-                                address
-                                city
-                                company
-                                country
-                                email
-                                firstname
-                                lastname
-                                postcode
-                                region
-                                telephone
+                            items{
+                                price
+                                qty
+                                sku
                             }
                         }
-                        items{
-                            price
-                            qty
-                            sku
+                        history{
+                            tgtId
+                            updatedAt
+                            orderStatus
+                            addresses{
+                                billto{
+                                    address
+                                    city
+                                    company
+                                    country
+                                    email
+                                    firstname
+                                    lastname
+                                    postcode
+                                    region
+                                    telephone
+                                }
+                                shipto{
+                                    address
+                                    city
+                                    company
+                                    country
+                                    email
+                                    firstname
+                                    lastname
+                                    postcode
+                                    region
+                                    telephone
+                                }
+                            }
+                            items{
+                                price
+                                qty
+                                sku
+                            }
                         }
                     }
-                    history{
-                        tgtId
-                        updatedAt
-                        orderStatus
-                        addresses{
-                            billto{
-                                address
-                                city
-                                company
-                                country
-                                email
-                                firstname
-                                lastname
-                                postcode
-                                region
-                                telephone
-                            }
-                            shipto{
-                                address
-                                city
-                                company
-                                country
-                                email
-                                firstname
-                                lastname
-                                postcode
-                                region
-                                telephone
-                            }
-                        }
-                        items{
-                            price
-                            qty
-                            sku
-                        }
-                    }
+                    createdAt
+                    updatedAt
+                    txNote
+                    txStatus
                 }
-                createdAt
-                updatedAt
-                txNote
-                txStatus
             }
-        }
         """
 
         variables = {"source": "MAGE2SQS", "srcId": "2010071552", "txType": "order"}
@@ -376,46 +376,46 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query($source: String!, $srcId: String!, $txType: String!) {
-            transaction(source: $source, srcId: $srcId, txType: $txType) {
-                __typename
-                id
-                source
-                srcId
-                tgtId
-                txType
-                ... on ItemreceiptType {
-                    data{
-                        internalId
-                        key
-                        orderDate
-                        refNo
-                        status
-                        tranIds
-                        updateDate
-                        shipTo{
-                            address
-                            city
-                            contact
-                            countryCode
-                            name
-                            shipping
-                            state
-                            zip
-                        }
-                        items{
+            query($source: String!, $srcId: String!, $txType: String!) {
+                transaction(source: $source, srcId: $srcId, txType: $txType) {
+                    __typename
+                    id
+                    source
+                    srcId
+                    tgtId
+                    txType
+                    ... on ItemreceiptType {
+                        data{
                             internalId
-                            itemNo
-                            qty
+                            key
+                            orderDate
+                            refNo
+                            status
+                            tranIds
+                            updateDate
+                            shipTo{
+                                address
+                                city
+                                contact
+                                countryCode
+                                name
+                                shipping
+                                state
+                                zip
+                            }
+                            items{
+                                internalId
+                                itemNo
+                                qty
+                            }
                         }
                     }
+                    createdAt
+                    updatedAt
+                    txNote
+                    txStatus
                 }
-                createdAt
-                updatedAt
-                txNote
-                txStatus
             }
-        }
         """
 
         variables = {"source": "S3-NS", "srcId": "SO56374", "txType": "itemreceipt"}
@@ -589,16 +589,16 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query($table: String!, $source: String!, $id: String!) {
-            task(table: $table, source: $source, id: $id) {
-                source
-                id
-                taskStatus
-                taskNote
-                updatedAt
-                ready
+            query($table: String!, $source: String!, $id: String!) {
+                task(table: $table, source: $source, id: $id) {
+                    source
+                    id
+                    taskStatus
+                    taskNote
+                    updatedAt
+                    ready
+                }
             }
-        }
         """
 
         variables = {
@@ -617,12 +617,12 @@ class DataWaldInterfaceTest(unittest.TestCase):
         logger.info(sys._getframe().f_code.co_name)
 
         query = """
-        query($source: String!, $task: String!) {
-            cutDate(source: $source, task: $task) {
-                cutDate
-                offset
+            query($source: String!, $task: String!) {
+                cutDate(source: $source, task: $task) {
+                    cutDate
+                    offset
+                }
             }
-        }
         """
 
         variables = {"source": "MAGE2SQS", "task": "syncOrder"}
